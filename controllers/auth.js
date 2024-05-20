@@ -30,13 +30,45 @@ router.post('/sign-up', async (req, res) => {
         return res.send('password must be at least 8 characters');
     }
 
-    
-const hashedPassword = bcrypt.hashSync(req.body.password, 10)
 
-req.body.password = hashedPassword;
+    const hashedPassword = bcrypt.hashSync(req.body.password, 10)
 
-const user = await User.create(req.body);
-res.send(`thanks for signing up ${user.username}`);
+    req.body.password = hashedPassword;
+
+    const user = await User.create(req.body);
+    res.send(`thanks for signing up ${user.username}`);
 });
+
+
+router.get('/sign-in', (req, res) => {
+    res.render('auth/sign-in.ejs');
+});
+
+router.post('/sign-in', async (req, res) => {
+
+    const userInDatabase = await User.findOne({ username: req.body.username });
+
+    if (!userInDatabase) {
+        return res.send('login failed');
+    }
+
+    const validPassword = bcrypt.compareSync(req.body.password, userInDatabase.password)
+
+    if(!validPassword) {
+        return res.send('login failed');
+    }
+
+    req.session.user = {
+        username: userInDatabase.username,
+    };
+
+    res.redirect('/');
+
+});
+
+router.get('/sign-out', (req, res) => {
+    req.session.destroy();
+    res.redirect('/');
+})
 
 module.exports = router;
